@@ -9,9 +9,17 @@ sock.bind((server_address, server_port))
 
 try:
     while True:
-        data, client_address = sock.recvfrom(4096)
+        header, client_address = sock.recvfrom(4096)
 
-        if data:
-            sent = sock.sendto(data, client_address)
+        if header:
+            user_name_length = int.from_bytes(header[:1], 'big')
+            user_name = header[1:user_name_length+1]
+            message = header[user_name_length+1:]
+
+            if user_name_length == 0:
+                sock.sendto('not allow empty of user name')
+                raise Exception('user name is empty')
+            print('login:' + user_name.decode('utf-8'))
+            sent = sock.sendto(message, client_address)
 finally:
     sock.close()
