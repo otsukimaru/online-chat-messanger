@@ -1,9 +1,10 @@
 import socket
-import time
+
+how = input('what are yo go ing to do?')
+user_name = input('enter user name: ')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('127.0.0.1', 9001)
-user_name = input('enter user name: ')
 timeout_sec = 10
 sock.settimeout(timeout_sec)
 
