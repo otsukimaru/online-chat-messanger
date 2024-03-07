@@ -12,16 +12,17 @@ room_names = {}
 while True:
     connection, client_address = tcp.accept()
     try:
-        request = tcp.recv(4096)
+        request = connection.recv(2)
         user_name_size = int.from_bytes(request[:1], 'big')
         operation_code_size = int.from_bytes(request[1:2], 'big')
         user_name = connection.recv(user_name_size).decode('utf-8')
         operation_code = connection.recv(operation_code_size).decode('utf-8')
-        
-        if operation_code == 0:
-            information = tcp.recv(4096)
-            room_name_size = int.from_bytes(header[:1], 'big')
-            password_size = int.from_bytes(header[1:2], 'big')
+        #if文から 条件比較がうまくいかない+クライアントに文字が送れない
+        if operation_code == b'0':
+            connection.send('please enter room name and password, password is optional'.encode('utf-8'))
+            information = connection.recv(4096)
+            room_name_size = int.from_bytes(information[:1], 'big')
+            password_size = int.from_bytes(information[1:2], 'big')
             room_name = connection.recv(room_name_size).decode('utf-8')
             password = connection.recv(password_size).decode('utf-8')
             if room_name in room_names:
@@ -52,31 +53,31 @@ while True:
     finally:
         connection.close()
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-server_address = '0.0.0.0'
-server_port = 9001
+# server_address = '0.0.0.0'
+# server_port = 9001
 
-sock.bind((server_address, server_port))
-user_arg_set = set()
+# sock.bind((server_address, server_port))
+# user_arg_set = set()
 
-try:
-    while True:
-        header, client_address = sock.recvfrom(4096)
-        user_arg_set.add(client_address)
+# try:
+#     while True:
+#         header, client_address = sock.recvfrom(4096)
+#         user_arg_set.add(client_address)
 
-        if header:
-            user_name_length = int.from_bytes(header[:1], 'big')
-            user_name = header[1:user_name_length+1]
-            message = header[user_name_length+1:]
+#         if header:
+#             user_name_length = int.from_bytes(header[:1], 'big')
+#             user_name = header[1:user_name_length+1]
+#             message = header[user_name_length+1:]
 
-            if user_name_length == 0:
-                sock.sendto('not allow empty of user name')
-                raise Exception('user name is empty')
+#             if user_name_length == 0:
+#                 sock.sendto('not allow empty of user name')
+#                 raise Exception('user name is empty')
             
-            print('login:' + user_name.decode('utf-8'))
-            for val in user_arg_set:
-                if val != client_address:
-                    sent = sock.sendto(message, val)
-finally:
-    sock.close()
+#             print('login:' + user_name.decode('utf-8'))
+#             for val in user_arg_set:
+#                 if val != client_address:
+#                     sent = sock.sendto(message, val)
+# finally:
+#     sock.close()
