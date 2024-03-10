@@ -17,21 +17,20 @@ while True:
         operation_code_size = int.from_bytes(request[1:2], 'big')
         user_name = connection.recv(user_name_size).decode('utf-8')
         operation_code = connection.recv(operation_code_size).decode('utf-8')
-        #if文から 条件比較がうまくいかない+クライアントに文字が送れない
-        if operation_code == b'0':
+        if operation_code == '0':
             connection.send('please enter room name and password, password is optional'.encode('utf-8'))
-            information = connection.recv(4096)
+            information = connection.recv(2)
             room_name_size = int.from_bytes(information[:1], 'big')
             password_size = int.from_bytes(information[1:2], 'big')
             room_name = connection.recv(room_name_size).decode('utf-8')
             password = connection.recv(password_size).decode('utf-8')
             if room_name in room_names:
-                tcp.send('このルーム名はすでに使われています。')
+                connection.send('このルーム名はすでに使われています。')
             else:
                 # トークンを発行
                 token = secrets.token_hex(8)
+                connection.send(token.encode('utf-8'))
                 room_names[room_name] = password
-                tcp.send(token)
         elif operation_code == 2:
             # すでにあるチャットルームに参加
             header = connection.recv(32)
@@ -42,10 +41,10 @@ while True:
             room_name = connection.recv(room_name_size).decode('utf-8')
             
             if room_name not in room_names:
-                tcp.send('このルーム名は存在しません')
+                connection.send('このルーム名は存在しません')
             else:
                 if room_names[room_name] is not None:
-                    tcp.send('パスワードを入力して下さい')
+                    connection.send('パスワードを入力して下さい')
             
         break
     except Exception as e:

@@ -20,7 +20,21 @@ except socket.error as err:
 try:
     header = createHeader(len(user_name), len(how))
     tcp.send(header + user_name.encode('utf-8') + how.encode('utf-8'))
-    tcp.recv(4096)
+    if how == '0':
+        response = tcp.recv(4096).decode('utf-8')
+        print(response)
+        room_name = input('please enter room name:')
+        optional = input('do you enter a password?')
+        if optional == '0':
+            password =input('please enter password')
+        if password:
+            header = createHeader(len(room_name),len(password))
+            tcp.send(header + room_name.encode('utf-8') + password.encode('utf-8'))
+        else:
+            tcp.send(room_name.encode('utf-8'))
+        # 成功すればトークンが返却、もし同じ名前のルームがあればそのメッセージが返ってくる
+        result = tcp.recv(4096).decode('utf-8')
+        print(result)
 finally:
     tcp.close()
     
