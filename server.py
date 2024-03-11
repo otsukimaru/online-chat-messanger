@@ -32,7 +32,8 @@ while True:
             else:
                 # トークンを発行
                 token = secrets.token_hex(8)
-                client_tokens[client_address] = token
+                server_address, ip_address = client_address
+                client_tokens[ip_address] = token
                 room_names[room_name] = password
                 
         # すでにあるチャットルームに参加
@@ -47,7 +48,8 @@ while True:
                 password = connection.recv(1).decode('utf-8')
                 if room_names[room_name] == password:
                     token = secrets.token_hex(8)
-                    client_tokens[client_address] = token
+                    server_address, ip_address = client_address
+                    client_tokens[ip_address] = token
                     #トークンを送る
                     connection.send(token.encode('utf-8'))
                 else:
@@ -57,7 +59,6 @@ while True:
         print(e)
     finally:
         connection.close()
-
 # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # server_address = '0.0.0.0'
