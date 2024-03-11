@@ -10,6 +10,7 @@ tcp_sever_port = 9002
 
 how = input('please enter operation code?')
 user_name = input('enter user name: ')
+token = ''
 
 try:
     tcp.connect((tcp_server_address, tcp_sever_port))
@@ -45,6 +46,8 @@ try:
             result = tcp.recv(4096).decode('utf-8')
             if result == '1':
                 print('your password is wrong. please retry first')
+            else:
+                token = tcp.recv('4096').decode('utf-8')
 finally:
     tcp.close()
     

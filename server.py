@@ -8,6 +8,7 @@ tcp_sever_port = 9002
 tcp.bind((tcp_server_address, tcp_sever_port))
 tcp.listen(10)
 room_names = {}
+client_tokens = {}
 
 while True:
     connection, client_address = tcp.accept()
@@ -29,7 +30,7 @@ while True:
             else:
                 # トークンを発行
                 token = secrets.token_hex(8)
-                connection.send(token.encode('utf-8'))
+                client_tokens[client_address] = token
                 room_names[room_name] = password
         elif operation_code == 2:
             # すでにあるチャットルームに参加
@@ -42,11 +43,12 @@ while True:
                 connection.send('1')
                 password = connection.recv(1).decode('utf-8')
                 if room_names[room_name] == password:
+                    token = secrets.token_hex(8)
+                    client_tokens[client_address] = token
                     #トークンを送る
-                    connection.send('0')
+                    connection.send(token.encode('utf-8'))
                 else:
                     connection.send('1')
-            
         break
     except Exception as e:
         print(e)
