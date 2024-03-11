@@ -18,6 +18,8 @@ while True:
         operation_code_size = int.from_bytes(request[1:2], 'big')
         user_name = connection.recv(user_name_size).decode('utf-8')
         operation_code = connection.recv(operation_code_size).decode('utf-8')
+        
+        # 新しくルームを作成する
         if operation_code == '0':
             connection.send('please enter room name and password, password is optional'.encode('utf-8'))
             information = connection.recv(2)
@@ -32,8 +34,9 @@ while True:
                 token = secrets.token_hex(8)
                 client_tokens[client_address] = token
                 room_names[room_name] = password
+                
+        # すでにあるチャットルームに参加
         elif operation_code == 2:
-            # すでにあるチャットルームに参加
             connection.send('please enter room name')
             room_name = connection.recv(1).decode('utf-8')
             

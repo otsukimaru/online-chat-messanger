@@ -21,6 +21,8 @@ except socket.error as err:
 try:
     header = createHeader(len(user_name), len(how))
     tcp.send(header + user_name.encode('utf-8') + how.encode('utf-8'))
+    
+    # 新しくルームを作る
     if how == '0':
         response = tcp.recv(4096).decode('utf-8')
         print(response)
@@ -36,6 +38,8 @@ try:
         # 成功すればトークンが返却、もし同じ名前のルームがあればそのメッセージが返ってくる
         result = tcp.recv(4096).decode('utf-8')
         print(result)
+        
+    # 既存のルームに参加する
     elif how == '2':
         response = tcp.recv(4096).decode('utf-8')
         if response == '0':
