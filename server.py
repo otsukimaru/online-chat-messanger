@@ -33,18 +33,19 @@ while True:
                 room_names[room_name] = password
         elif operation_code == 2:
             # すでにあるチャットルームに参加
-            header = connection.recv(32)
-            room_name_size = int.from_bytes(header[:1], 'big')
-            operation = int.from_bytes(header[1:2], 'big')
-            state = int.from_bytes(header[2:3], 'big')
-            operation_payload_size = int.from_bytes(header[3:], 'big')
-            room_name = connection.recv(room_name_size).decode('utf-8')
+            connection.send('please enter room name')
+            room_name = connection.recv(1).decode('utf-8')
             
             if room_name not in room_names:
-                connection.send('このルーム名は存在しません')
-            else:
-                if room_names[room_name] is not None:
-                    connection.send('パスワードを入力して下さい')
+                connection.send('0')
+            if room_names[room_name] is not None:
+                connection.send('1')
+                password = connection.recv(1).decode('utf-8')
+                if room_names[room_name] == password:
+                    #トークンを送る
+                    connection.send('0')
+                else:
+                    connection.send('1')
             
         break
     except Exception as e:

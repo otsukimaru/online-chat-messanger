@@ -35,6 +35,16 @@ try:
         # 成功すればトークンが返却、もし同じ名前のルームがあればそのメッセージが返ってくる
         result = tcp.recv(4096).decode('utf-8')
         print(result)
+    elif how == '2':
+        response = tcp.recv(4096).decode('utf-8')
+        if response == '0':
+            print('そのルーム名は使用されていません')
+        elif response == '1':
+            password = input('please enter password')
+            tcp.send(password.encode('utf-8'))
+            result = tcp.recv(4096).decode('utf-8')
+            if result == '1':
+                print('your password is wrong. please retry first')
 finally:
     tcp.close()
     
