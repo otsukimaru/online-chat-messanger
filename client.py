@@ -40,9 +40,11 @@ try:
         
     # 既存のルームに参加する
     elif how == '2':
+        room_name = input('please enter room name')
+        tcp.send(room_name.encode('utf-8'))
         response = tcp.recv(4096).decode('utf-8')
         if response == '0':
-            print('そのルーム名は使用されていません')
+            print('the room is not found')
         elif response == '1':
             password = input('please enter password')
             tcp.send(password.encode('utf-8'))
@@ -56,8 +58,8 @@ finally:
     
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('127.0.0.1', 9001)
-timeout_sec = 10
-sock.settimeout(timeout_sec)
+# timeout_sec = 10
+# sock.settimeout(timeout_sec)
 
 try:
     sock.sendto(token.encode('utf-8'), server_address)

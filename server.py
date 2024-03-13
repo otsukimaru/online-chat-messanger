@@ -10,8 +10,6 @@ tcp.listen(10)
 room_names = {}
 client_tokens = {}
 
-# 続きはUDPでルームに参加できるか、そしてすでにあるチャットルームの記述があっているか確認する
-
 while True:
     connection, client_address = tcp.accept()
     try:
@@ -30,7 +28,7 @@ while True:
             room_name = connection.recv(room_name_size).decode('utf-8')
             password = connection.recv(password_size).decode('utf-8')
             if room_name in room_names:
-                connection.send('このルーム名はすでに使われています。')
+                connection.send('このルーム名はすでに使われています。'.encode('utf-8'))
             else:
                 # トークンを発行
                 token = secrets.token_hex(8)
@@ -40,15 +38,13 @@ while True:
                 connection.send(token.encode('utf-8'))
                 
         # すでにあるチャットルームに参加
-        elif operation_code == 2:
-            connection.send('please enter room name')
-            room_name = connection.recv(1).decode('utf-8')
-            
+        elif operation_code == '2':
+            room_name = connection.recv(4096).decode('utf-8')
             if room_name not in room_names:
-                connection.send('0')
+                connection.send('0'.encode('utf-8'))
             if room_names[room_name] is not None:
-                connection.send('1')
-                password = connection.recv(1).decode('utf-8')
+                connection.send('1'.encode('utf-8'))
+                password = connection.recv(4096).decode('utf-8')
                 if room_names[room_name] == password:
                     token = secrets.token_hex(8)
                     server_address, ip_address = client_address
@@ -57,6 +53,8 @@ while True:
                     connection.send(token.encode('utf-8'))
                 else:
                     connection.send('1')
+        else:
+            connection.send('operation code is not found'.encode('utf-8'))
         break
     except Exception as e:
         print(e)
@@ -75,7 +73,6 @@ user_arg_set = set()
 try:
     while True:
         token, server_address = sock.recvfrom(4096)
-        print(client_tokens.values(), token.decode('utf-8'))
         if token.decode('utf-8') not in client_tokens.values():
             sock.sendto('0'.encode('utf-8'), server_address)
             break
