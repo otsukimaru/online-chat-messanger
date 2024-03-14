@@ -37,6 +37,7 @@ try:
             tcp.send(room_name.encode('utf-8'))
         # 成功すればトークンが返却、もし同じ名前のルームがあればそのメッセージが返ってくる
         token = tcp.recv(4096).decode('utf-8')
+        tcp.close()
         
     # 既存のルームに参加する
     elif how == '2':
@@ -52,7 +53,7 @@ try:
             if result == '1':
                 print('your password is wrong. please retry first')
             else:
-                token = tcp.recv('4096').decode('utf-8')
+                token = tcp.recv(4096).decode('utf-8')
 finally:
     tcp.close()
     
@@ -62,8 +63,10 @@ server_address = ('127.0.0.1', 9001)
 # sock.settimeout(timeout_sec)
 
 try:
+    print('a')
     sock.sendto(token.encode('utf-8'), server_address)
     result, address = sock.recvfrom(4096)
+    print(result.decode('utf-8'))
     if result.decode('utf-8') == '0':
         print('you are not allowed to join this room')
         sys.exit(1)
