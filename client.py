@@ -63,7 +63,7 @@ server_address = ('127.0.0.1', 9001)
 # sock.settimeout(timeout_sec)
 
 try:
-    print('a')
+    print(token)
     sock.sendto(token.encode('utf-8'), server_address)
     result, address = sock.recvfrom(4096)
     print(result.decode('utf-8'))
