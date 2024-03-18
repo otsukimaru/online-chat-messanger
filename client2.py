@@ -1,6 +1,5 @@
 import socket
 import sys
-import time
 
 def createHeader(user_name, operation_code):
     return user_name.to_bytes(1, 'big') + operation_code.to_bytes(1, 'big')
@@ -55,18 +54,16 @@ try:
                 print('your password is wrong. please retry first')
             else:
                 token = tcp.recv(4096).decode('utf-8')
-    
 finally:
     tcp.close()
-
-time.sleep(1)
-
+    
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('127.0.0.1', 9001)
 # timeout_sec = 10
 # sock.settimeout(timeout_sec)
-def doUdp():
-    try:
+
+try:
+    while True:
         print(token)
         sock.sendto(token.encode('utf-8'), server_address)
         result, address = sock.recvfrom(4096)
@@ -75,19 +72,18 @@ def doUdp():
             if result.decode('utf-8') == '0':
                 print('you are not allowed to join this room')
                 sys.exit(1)
-        while True:
-            message = input('enter message: ')
-            
-            user_name_bits = user_name.encode('utf-8')
-            message_bits = message.encode('utf-8')
-            header = len(user_name_bits).to_bytes(1, 'big') + user_name_bits
-            sock.sendto(header + message_bits, server_address)
-            
-            data, server = sock.recvfrom(4096)
-            print(data.decode('utf-8'))
-    except socket.timeout:
-        print('timeout')
-    finally:
-        sock.close()
-
-doUdp()
+            break
+    while True:
+        message = input('enter message: ')
+        
+        user_name_bits = user_name.encode('utf-8')
+        message_bits = message.encode('utf-8')
+        header = len(user_name_bits).to_bytes(1, 'big') + user_name_bits
+        sock.sendto(header + message_bits, server_address)
+        
+        data, server = sock.recvfrom(4096)
+        print(data.decode('utf-8'))
+except socket.timeout:
+    print('timeout')
+finally:
+    sock.close()

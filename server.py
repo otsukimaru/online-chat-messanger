@@ -3,47 +3,44 @@ import secrets
 import threading
 import sys
 
-def handle_client_udp(sock, client_address):
+def handle_client_udp(data, client_address, sock):
     user_arg_set = set()
-    try:
-        print('bbbbb')
-        data, client_address = sock.recvfrom(4096)
-        token = data.decode('utf-8')
-        if token not in client_tokens.values():
-            sock.sendto('0'.encode('utf-8'), client_address)
-        else:
-            sock.sendto('1'.encode('utf-8'), client_address)
-        header, client_address = sock.recvfrom(4096)
-        user_arg_set.add(client_address)
+    print('bbbbb')
+    token = data.decode('utf-8')
+    print(token)
+    if token not in client_tokens.values():
+        sock.sendto('0'.encode('utf-8'), client_address)
+    else:
+        sock.sendto('1'.encode('utf-8'), client_address)
+    header, client_address = sock.recvfrom(4096)
+    user_arg_set.add(client_address)
 
-        if header:
-            user_name_length = int.from_bytes(header[:1], 'big')
-            user_name = header[1:user_name_length+1]
-            message = header[user_name_length+1:]
+    if header:
+        user_name_length = int.from_bytes(header[:1], 'big')
+        user_name = header[1:user_name_length+1]
+        message = header[user_name_length+1:]
 
-            if user_name_length == 0:
-                sock.sendto('not allow empty of user name'.encode('utf-8'), client_address)
-                raise Exception('user name is empty')
-            
-            print('login:' + user_name.decode('utf-8'))
-            for val in user_arg_set:
-                if val != client_address:
-                    sent = sock.sendto(message, val)
-    finally:
-        sock.close()
+        if user_name_length == 0:
+            sock.sendto('not allow empty of user name'.encode('utf-8'), client_address)
+            raise Exception('user name is empty')
         
-def handle_udp_connections():     
+        print('login:' + user_name.decode('utf-8'))
+        for val in user_arg_set:
+            if val != client_address:
+                sent = sock.sendto(message, val)
+        
+def handle_udp_connections():   
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_address = '127.0.0.1'
+    server_port = 9001
+    sock.bind((server_address, server_port))  
     while True:
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server_address = '127.0.0.1'
-            server_port = 9001
-            sock.bind((server_address, server_port))
             print('UDP server is listening')
             data, client_address = sock.recvfrom(1024)
-            print(data.decode('utf-8'))
-            client_thread = threading.Thread(target=handle_client_udp, args=(sock, client_address))
+            print(data.decode('utf-8'), client_address)
+            client_thread = threading.Thread(target=handle_client_udp, args=(data, client_address, sock))
             client_thread.start()
         except OSError as e:
             print(e)
