@@ -2,8 +2,9 @@ import socket
 import sys
 import time
 
-def createHeader(user_name, operation_code):
-    return user_name.to_bytes(1, 'big') + operation_code.to_bytes(1, 'big')
+def createHeader(first, second):
+    return first.to_bytes(1, 'big') + second.to_bytes(1, 'big')
+
 
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcp_server_address = '127.0.0.1'
@@ -12,6 +13,7 @@ tcp_sever_port = 9002
 how = input('please enter operation code?')
 user_name = input('enter user name: ')
 token = 'aaaa'
+join_room_name = ''
 
 try:
     tcp.connect((tcp_server_address, tcp_sever_port))
@@ -38,6 +40,7 @@ try:
             tcp.send(room_name.encode('utf-8'))
         # 成功すればトークンが返却、もし同じ名前のルームがあればそのメッセージが返ってくる
         token = tcp.recv(4096).decode('utf-8')
+        join_room_name = room_name
         tcp.close()
         
     # 既存のルームに参加する
@@ -55,6 +58,7 @@ try:
                 print('your password is wrong. please retry first')
             else:
                 token = tcp.recv(4096).decode('utf-8')
+                join_room_name = room_name
     
 finally:
     tcp.close()
@@ -66,25 +70,20 @@ server_address = ('127.0.0.1', 9001)
 # timeout_sec = 10
 # sock.settimeout(timeout_sec)
 def doUdp():
+    print(token)
     try:
-        print(token)
-        sock.sendto(token.encode('utf-8'), server_address)
-        result, address = sock.recvfrom(4096)
-        if result:
-            print(result.decode('utf-8'))
-            if result.decode('utf-8') == '0':
-                print('you are not allowed to join this room')
-                sys.exit(1)
+        header = createHeader(len(join_room_name), len(token))
         while True:
             message = input('enter message: ')
-            
-            user_name_bits = user_name.encode('utf-8')
             message_bits = message.encode('utf-8')
-            header = len(user_name_bits).to_bytes(1, 'big') + user_name_bits
-            sock.sendto(header + message_bits, server_address)
-            
-            data, server = sock.recvfrom(4096)
-            print(data.decode('utf-8'))
+            print(header)
+            sock.sendto(header + join_room_name.encode('utf-8') + token.encode('utf-8') + message_bits, server_address)
+            data, address = sock.recvfrom(4096)
+            if data:
+                if data.decode('utf-8') == '0':
+                    print('you are not allowed to join this room')
+                    sys.exit(1)
+                print(data.decode('utf-8'))
     except socket.timeout:
         print('timeout')
     finally:
