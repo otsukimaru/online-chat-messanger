@@ -3,8 +3,9 @@ import secrets
 import threading
 import sys
 
+user_arg_set = set()
+
 def handle_client_udp(data, client_address, sock):
-    user_arg_set = set()
     print('bbbbb')
     token = data.decode('utf-8')
     print(token)
@@ -44,18 +45,35 @@ def handle_udp_connections():
             client_thread.start()
         except OSError as e:
             print(e)
+            
+def recv_all(sock, length):
+    data = b''
+    while len(data) < length:
+        more = sock.recv(length - len(data))
+        if not more:
+            raise Exception('short read from socket')
+        data += more
+    return data
 
 room_names = {}
 client_tokens = {}
 
 def handle_client(connection, client_address):
     try:
-        request = connection.recv(2)
-        user_name_size = int.from_bytes(request[:1], 'big')
-        operation_code_size = int.from_bytes(request[1:2], 'big')
-        user_name = connection.recv(user_name_size).decode('utf-8')
-        operation_code = connection.recv(operation_code_size).decode('utf-8')
+        # ヘッダーの受信
+        header = recv_all(connection, 2)
+        print(f'9: server header受取 {header}')
+
+        # ユーザー名のサイズと操作コードのサイズを取得
+        user_name_size = int.from_bytes(header[:1], 'big')
+        operation_code_size = int.from_bytes(header[1:2], 'big')
+
+        # ユーザー名と操作コードの受信
+        user_name = recv_all(connection, user_name_size).decode('utf-8')
+        operation_code = recv_all(connection, operation_code_size).decode('utf-8')
+
         print(user_name + ' is login')
+        print(f'operation_code is {operation_code}')
         # 新しくルームを作成する
         if operation_code == '0':
             connection.send('please enter room name and password, password is optional'.encode('utf-8'))
@@ -97,28 +115,25 @@ def handle_client(connection, client_address):
         print(e)
     finally:
         connection.close()
-        tcp.close()
 
-def handle_tcp_connections():
+def handle_tcp_connections(tcp):
     while True:
         connection, client_address = tcp.accept()
+        print('server is connected')
         client_thread = threading.Thread(target=handle_client, args=(connection, client_address))
         client_thread.start()
-# TCPスレッドの開始
-tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-tcp_server_address = '0.0.0.0'
-tcp_sever_port = 9002
-tcp.bind((tcp_server_address, tcp_sever_port))
-tcp.listen(10)
-tcp_thread = threading.Thread(target=handle_tcp_connections)
-tcp_thread.start()
 
-# TCPスレッドの終了を待つ
-tcp_thread.join()
+def main():
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_server_address = '0.0.0.0'
+    tcp_server_port = 9002
+    tcp.bind((tcp_server_address, tcp_server_port))
+    tcp.listen(10)
+    tcp_thread = threading.Thread(target=handle_tcp_connections, args=(tcp,))
+    tcp_thread.start()
+    
+    udp_thread = threading.Thread(target=handle_udp_connections)
+    udp_thread.start()
 
-# UDPスレッドの開始
-udp_thread = threading.Thread(target=handle_udp_connections)
-udp_thread.start()
 
-# UDPスレッドの終了を待つ
-udp_thread.join()
+main()
