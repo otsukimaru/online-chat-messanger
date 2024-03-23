@@ -28,7 +28,6 @@ try:
     # 新しくルームを作る
     if how == '0':
         response = tcp.recv(4096).decode('utf-8')
-        print(response)
         room_name = input('please enter room name:')
         optional = input('do you enter a password?')
         if optional == '0':
@@ -46,18 +45,22 @@ try:
     # 既存のルームに参加する
     elif how == '2':
         room_name = input('please enter room name')
-        tcp.send(room_name.encode('utf-8'))
+        room_name_header = len(room_name).to_bytes(1, 'big')
+        tcp.send(room_name_header + room_name.encode('utf-8'))
         response = tcp.recv(4096).decode('utf-8')
         if response == '0':
             print('the room is not found')
+            sys.exit(1)
         elif response == '1':
             password = input('please enter password')
-            tcp.send(password.encode('utf-8'))
+            password_header = len(password).to_bytes(1, 'big')
+            tcp.send(password_header + password.encode('utf-8'))
             result = tcp.recv(4096).decode('utf-8')
             if result == '1':
                 print('your password is wrong. please retry first')
+                sys.exit(1)
             else:
-                token = tcp.recv(4096).decode('utf-8')
+                token = result
                 join_room_name = room_name
     
 finally:
@@ -83,7 +86,8 @@ def doUdp():
                 if data.decode('utf-8') == '0':
                     print('you are not allowed to join this room')
                     sys.exit(1)
-                print(data.decode('utf-8'))
+                elif data.decode('utf-8') == '1':
+                    print(data.decode('utf-8'))
     except socket.timeout:
         print('timeout')
     finally:

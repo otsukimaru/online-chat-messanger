@@ -5,17 +5,17 @@ import sys
 
 user_arg_set = set()
 
-def handle_client_udp(room_name, token, data, client_address, sock):
+def handle_client_udp(room_name, token, message_context, client_address, sock):
     if token not in client_tokens.values():
         sock.sendto('0'.encode('utf-8'), client_address)
     else:
         sock.sendto('1'.encode('utf-8'), client_address)
 
     user_arg_set.add(client_address)
-
+    print(user_arg_set)
     for val in user_arg_set:
         if val != client_address:
-            sock.sendto(data.decode('utf-8'), val)
+            sock.sendto(message_context, val)
         
 def handle_udp_connections():   
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -95,12 +95,12 @@ def handle_client(connection, client_address):
         elif operation_code == '2':
             information = recv_all(connection, 1)
             room_name = recv_all(connection, int.from_bytes(information, 'big')).decode('utf-8')
-            room_name = connection.recv(4096).decode('utf-8')
             if room_name not in room_names:
                 connection.send('0'.encode('utf-8'))
             if room_names[room_name] is not None:
                 connection.send('1'.encode('utf-8'))
-                password = connection.recv(4096).decode('utf-8')
+                pass_info = recv_all(connection, 1)
+                password = recv_all(connection, int.from_bytes(pass_info, 'big')).decode('utf-8')
                 if room_names[room_name] == password:
                     token = secrets.token_hex(8)
                     server_address, ip_address = client_address
@@ -108,7 +108,12 @@ def handle_client(connection, client_address):
                     #トークンを送る
                     connection.send(token.encode('utf-8'))
                 else:
-                    connection.send('1')
+                    connection.send('1'.encode('utf-8'))
+            else:
+                token = secrets.token_hex(8)
+                server_address, ip_address = client_address
+                client_tokens[ip_address] = token
+                connection.send(token.encode('utf-8'))
         else:
             connection.send('operation code is not found'.encode('utf-8'))
             sys.exit(1)
