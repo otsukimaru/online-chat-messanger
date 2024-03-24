@@ -6,10 +6,34 @@ import sys
 user_arg_set = set()
 user_arg_lock = threading.Lock()
 
+room_names = {}
+client_tokens = {}
+host = {}
+
 def handle_client_udp(room_name, token, message_context, client_address, sock):
     with user_arg_lock:
-        if token not in client_tokens.values():
+        if token not in client_tokens.keys():
             sock.sendto('0'.encode('utf-8'), client_address)
+        elif host[room_name] is None:
+            for user in user_arg_set:
+                user_ip, user_port = user
+                sock.sendto('99'.encode('utf-8'), (user_ip, user_port))
+        elif message_context == 'exit':
+            #退出したuserを削除
+            for user in user_arg_set:
+                user_ip, user_port = user
+                cli_ip, cli_port = client_address
+                if user_ip == cli_ip and user_port == cli_port:
+                    user_arg_set.remove(user)
+                    break
+            #hostが退出した場合、他のuserに通知
+            if host[room_name] == token:
+                host[room_name] = None
+                room_names.pop(room_name)
+                client_tokens.pop(token)
+                for user in user_arg_set:
+                    user_ip, user_port = user
+                    sock.sendto('99'.encode('utf-8'), (user_ip, user_port))
         else:
             for user in user_arg_set:
                 print("Sending message to:", user, client_address)
@@ -53,9 +77,6 @@ def recv_all(sock, length):
         data += more
     return data
 
-room_names = {}
-client_tokens = {}
-
 def handle_client(connection, client_address):
     try:
         # ヘッダーの受信
@@ -89,9 +110,10 @@ def handle_client(connection, client_address):
                 # トークンを発行
                 token = secrets.token_hex(8)
                 server_address, ip_address = client_address
-                client_tokens[ip_address] = token
+                client_tokens[token] = ip_address
                 room_names[room_name] = password
                 connection.send(token.encode('utf-8'))
+                host[room_name] = token
                 
         # すでにあるチャットルームに参加
         elif operation_code == '2':
@@ -106,7 +128,7 @@ def handle_client(connection, client_address):
                 if room_names[room_name] == password:
                     token = secrets.token_hex(8)
                     server_address, ip_address = client_address
-                    client_tokens[ip_address] = token
+                    client_tokens[token] = ip_address
                     #トークンを送る
                     connection.send(token.encode('utf-8'))
 
@@ -115,7 +137,7 @@ def handle_client(connection, client_address):
             else:
                 token = secrets.token_hex(8)
                 server_address, ip_address = client_address
-                client_tokens[ip_address] = token
+                client_tokens[token] = ip_address
                 connection.send(token.encode('utf-8'))
         else:
             connection.send('operation code is not found'.encode('utf-8'))

@@ -70,6 +70,7 @@ time.sleep(1)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('127.0.0.1', 9001)
+#roomを退出したい時は、'exit'と入力してください
 def doUdp():
     try:
         header = createHeader(len(join_room_name), len(token))
@@ -78,9 +79,15 @@ def doUdp():
             message_bits = message.encode('utf-8')
             sock.sendto(header + join_room_name.encode('utf-8') + token.encode('utf-8') + message_bits, server_address)
             data, address = sock.recvfrom(4096)
+            if message == 'exit':
+                print('you are leaving the room')
+                break
             if data:
                 if data.decode('utf-8') == '0':
                     print('you are not allowed to join this room')
+                    sys.exit(1)
+                elif data.decode('utf-8') == '99':
+                    print('The host is left, This room is closed')
                     sys.exit(1)
                 else:
                     print('message from server:' + data.decode())
