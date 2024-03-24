@@ -70,24 +70,21 @@ time.sleep(1)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('127.0.0.1', 9001)
-# timeout_sec = 10
-# sock.settimeout(timeout_sec)
 def doUdp():
-    print(token)
     try:
         header = createHeader(len(join_room_name), len(token))
         while True:
             message = input('enter message: ')
             message_bits = message.encode('utf-8')
-            print(header)
             sock.sendto(header + join_room_name.encode('utf-8') + token.encode('utf-8') + message_bits, server_address)
             data, address = sock.recvfrom(4096)
             if data:
                 if data.decode('utf-8') == '0':
                     print('you are not allowed to join this room')
                     sys.exit(1)
-                elif data.decode('utf-8') == '1':
-                    print(data.decode('utf-8'))
+                else:
+                    print('message from server:' + data.decode())
+                    continue
     except socket.timeout:
         print('timeout')
     finally:

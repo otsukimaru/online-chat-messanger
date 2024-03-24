@@ -4,18 +4,20 @@ import threading
 import sys
 
 user_arg_set = set()
+user_arg_lock = threading.Lock()
 
 def handle_client_udp(room_name, token, message_context, client_address, sock):
-    if token not in client_tokens.values():
-        sock.sendto('0'.encode('utf-8'), client_address)
-    else:
-        sock.sendto('1'.encode('utf-8'), client_address)
+    with user_arg_lock:
+        if token not in client_tokens.values():
+            sock.sendto('0'.encode('utf-8'), client_address)
+        else:
+            for user in user_arg_set:
+                print("Sending message to:", user, client_address)
+                user_ip, user_port = user
+                message_byte = message_context.encode('utf-8')
+                sock.sendto(message_byte, (user_ip, user_port))
 
-    user_arg_set.add(client_address)
-    print(user_arg_set)
-    for val in user_arg_set:
-        if val != client_address:
-            sock.sendto(message_context, val)
+
         
 def handle_udp_connections():   
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -31,12 +33,12 @@ def handle_udp_connections():
             message = data[2:]
             room_name_size = int.from_bytes(header[:1], 'big')
             token_size = int.from_bytes(header[1:2], 'big')
-
+            user_arg_set.add(client_address)
             room_name_data = data[2:room_name_size + 2]
             token_data = data[room_name_size + 2:room_name_size + 2 + token_size]
             room_name = room_name_data.decode('utf-8')
             token = token_data.decode('utf-8')
-            message_context = data[room_name_size + token_size + 2:]
+            message_context = data[room_name_size + token_size + 2:].decode('utf-8')
             client_thread = threading.Thread(target=handle_client_udp, args=(room_name, token, message_context, client_address, sock))
             client_thread.start()
         except OSError as e:
@@ -107,6 +109,7 @@ def handle_client(connection, client_address):
                     client_tokens[ip_address] = token
                     #トークンを送る
                     connection.send(token.encode('utf-8'))
+
                 else:
                     connection.send('1'.encode('utf-8'))
             else:
